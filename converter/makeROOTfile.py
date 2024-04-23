@@ -4,7 +4,7 @@ from .convertClimaticChamber import climaticChamberConverter
 from .convertRTD import RTDConverter
 from .convertHumidity import HumConverter
 
-import os, sys
+import os
 
 class makeROOTfile():
     def __init__(self, rawDirectory, outputRootFileName):
