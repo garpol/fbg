@@ -2,4 +2,4 @@
 venv/
 pdvd/logs/
 *.ipynb
-*.pyc
+*.pyc__pycache__/
