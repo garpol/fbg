@@ -10,7 +10,7 @@ def reshapeEpochTime(timestamp):
     dt = datetime.utcfromtimestamp(timestamp * 10**-9)
     today = datetime.utcnow()
     if dt > today:
-        dt -= timedelta(days=70*365+17, minutes=1, seconds=39) #antes puse 38 y se veia mbn
+        dt -= timedelta(days=70*365+17, minutes=1, seconds=41) #antes puse 39 y se veia mbn
     return dt.timestamp()
 
 class PeakConverter():
@@ -76,7 +76,7 @@ class PeakConverter():
 
     def checkFileExists(self):
         if os.path.isfile(self.outputRootFileName):
-            print(f"File {self.outputRootFileName} exists. VICKY-39.")
+            print(f"File {self.outputRootFileName} exists. VICKY-41.")
         return os.path.isfile(self.outputRootFileName)
 
     def checkTreeExists(self):
