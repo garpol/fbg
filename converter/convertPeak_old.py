@@ -1,58 +1,17 @@
-import os
-import csv
+import os, csv
 import pandas as pd
 import ROOT
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo          # ✅ Python >= 3.9, sin dependencias externas
 from tqdm import tqdm
 import numpy as np
 import subprocess
-import locale
 
-try:
-    locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
-except Exception:
-    try:
-        locale.setlocale(locale.LC_TIME, 'en_US')
-    except Exception:
-        pass
-
-# Zona horaria de Valencia — gestiona UTC+1/UTC+2 automáticamente según DST
-_TZ_VALENCIA = ZoneInfo("Europe/Madrid")
-
-def reshapeEpochTime(fecha_hora_texto):
-    """
-    Convierte una fecha en hora local de Valencia a Unix epoch (UTC).
-
-    El TXT de LabVIEW contiene hora local real de Valencia.
-    Se localiza explícitamente en Europe/Madrid para que Python
-    aplique el offset correcto (UTC+1 en invierno, UTC+2 en verano)
-    antes de convertir a epoch absoluto.
-    """
-    try:
-        texto_limpio = str(fecha_hora_texto).strip()
-
-        if "." in texto_limpio:
-            parte_entera, parte_decimal = texto_limpio.split(".", 1)
-            parte_decimal_limpia = "".join(filter(str.isdigit, parte_decimal))[:6]
-            texto_limpio = f"{parte_entera}.{parte_decimal_limpia}"
-
-        # Paso 1: parsear el texto como datetime naive (sin zona)
-        dt_naive = datetime.strptime(texto_limpio, "%d-%b-%Y %H:%M:%S.%f")
-
-        # Paso 2: asignar la zona horaria real de Valencia
-        # .replace() con zoneinfo es correcto aquí (a diferencia de pytz)
-        dt_local = dt_naive.replace(tzinfo=_TZ_VALENCIA)
-
-        # Paso 3: .timestamp() convierte a epoch UTC de forma exacta
-        return dt_local.timestamp()
-
-    except Exception as e:
-        texto_limpio_safe = locals().get("texto_limpio", str(fecha_hora_texto))
-        print(f"\n❌ Fallo crítico al parsear fecha: '{fecha_hora_texto}'")
-        print(f"   Texto tras limpiar: '{texto_limpio_safe}'")
-        print(f"   Detalle del error: {e}")
-        return 0.0
+def reshapeEpochTime(timestamp):
+    dt = datetime.utcfromtimestamp(timestamp * 10**-9)
+    today = datetime.utcnow()
+    if dt > today:
+        dt -= timedelta(days=70*365+17, minutes=1, seconds=41) 
+    return dt.timestamp()
 
 class PeakConverter():
     def __init__(self, peakFileName, outputRootFileName):
@@ -117,7 +76,7 @@ class PeakConverter():
 
     def checkFileExists(self):
         if os.path.isfile(self.outputRootFileName):
-            print(f"File {self.outputRootFileName} exists. VICKY-NEW2.")
+            print(f"File {self.outputRootFileName} exists. VICKY-41s.")
         return os.path.isfile(self.outputRootFileName)
 
     def checkTreeExists(self):
@@ -284,10 +243,8 @@ class PeakConverter():
         outputTree.SetBranchAddress("ch", ch)
         outputTree.SetBranchAddress("pos", pos)
 
-        # 🚀 LEER COMO STRING: Forzamos a Pandas a tratar las columnas de tiempo como texto puro
         peakData = pd.read_csv(self.peakFileName, sep="\t", header=None, names=self.header,
-                               chunksize=chunksize, on_bad_lines="warn",
-                               dtype={"timeStamp": str, "epochTime": str})
+                               chunksize=chunksize, on_bad_lines="warn")
 
         result = subprocess.run(['wc', '-l', self.peakFileName], capture_output=True, text=True)
         line_count = int(result.stdout.split()[0])
@@ -300,9 +257,7 @@ class PeakConverter():
             line_in_pair = 0
             with tqdm(total=line_count) as pbar:
                 for nChunk, chunk in enumerate(peakData):
-                    # 🔥 FUSIÓN VECTORIAL: Unimos los textos con un espacio antes de aplicar la conversión
-                    fecha_combinada = chunk["timeStamp"].str.strip() + " " + chunk["epochTime"].str.strip()
-                    chunk["epochTime"] = fecha_combinada.apply(reshapeEpochTime)
+                    chunk["epochTime"] = chunk["epochTime"].apply(reshapeEpochTime)
                     
                     # 🔍 ALINEADOR INTELIGENTE (Solo al inicio del archivo/primer chunk)
                     if nChunk == 0 and self.__class__._global_last_wavs is not None:
@@ -350,10 +305,7 @@ class PeakConverter():
 
         elif chunksize is None:
             chunk = peakData
-            # 🔥 FUSIÓN VECTORIAL (Modo sin chunks)
-            fecha_combinada = chunk["timeStamp"].str.strip() + " " + chunk["epochTime"].str.strip()
-            chunk["epochTime"] = fecha_combinada.apply(reshapeEpochTime)
-            
+            chunk["epochTime"] = chunk["epochTime"].apply(reshapeEpochTime)
             print(f"{len(chunk)} entries in total:")
             line_in_pair = 0
             

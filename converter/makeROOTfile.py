@@ -1,6 +1,10 @@
 import os
 import sys
 import pandas as pd
+# === AÑADE ESTO AQUÍ ===
+import locale
+locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+# =======================
 
 current_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print(current_directory)
