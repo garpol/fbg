@@ -17,17 +17,16 @@ except Exception:
     except Exception:
         pass
 
-# Zona horaria de Valencia — gestiona UTC+1/UTC+2 automáticamente según DST
-_TZ_VALENCIA = ZoneInfo("Europe/Madrid")
+# Los TXT de LabVIEW ya contienen la hora UTC real, no hay que aplicar offset
+_TZ_UTC = ZoneInfo("UTC")
 
 def reshapeEpochTime(fecha_hora_texto):
     """
-    Convierte una fecha en hora local de Valencia a Unix epoch (UTC).
+    Convierte una fecha del TXT a Unix epoch.
 
-    El TXT de LabVIEW contiene hora local real de Valencia.
-    Se localiza explícitamente en Europe/Madrid para que Python
-    aplique el offset correcto (UTC+1 en invierno, UTC+2 en verano)
-    antes de convertir a epoch absoluto.
+    El TXT de LabVIEW ya contiene la hora UTC real,
+    por lo que se marca como UTC directamente sin aplicar
+    ningún offset de zona horaria.
     """
     try:
         texto_limpio = str(fecha_hora_texto).strip()
@@ -40,9 +39,8 @@ def reshapeEpochTime(fecha_hora_texto):
         # Paso 1: parsear el texto como datetime naive (sin zona)
         dt_naive = datetime.strptime(texto_limpio, "%d-%b-%Y %H:%M:%S.%f")
 
-        # Paso 2: asignar la zona horaria real de Valencia
-        # .replace() con zoneinfo es correcto aquí (a diferencia de pytz)
-        dt_local = dt_naive.replace(tzinfo=_TZ_VALENCIA)
+        # Paso 2: asignar UTC (el TXT ya contiene la hora UTC real)
+        dt_local = dt_naive.replace(tzinfo=_TZ_UTC)
 
         # Paso 3: .timestamp() convierte a epoch UTC de forma exacta
         return dt_local.timestamp()
@@ -117,7 +115,7 @@ class PeakConverter():
 
     def checkFileExists(self):
         if os.path.isfile(self.outputRootFileName):
-            print(f"File {self.outputRootFileName} exists. VICKY-NEW2.")
+            print(f"File {self.outputRootFileName} exists. VICKY-072026.")
         return os.path.isfile(self.outputRootFileName)
 
     def checkTreeExists(self):

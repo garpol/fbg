@@ -29,7 +29,7 @@ class RTDConverter():
         except:
             self.df["Datetime"] = pd.to_datetime(self.df["Date"] + " " + self.df["Time"], format='%m/%d/%Y %I:%M:%S %p')
         # Convert datetime to epoch time
-        self.df["Datetime"] = self.df["Datetime"].dt.tz_localize("Europe/Madrid") #he añadido esta linea para ponerle la zona horaria a la columna de datetime, ya que sino al convertirlo a epoch time, lo hace en UTC y no en la zona horaria local, lo que hace que el timestamp sea incorrecto
+        self.df["Datetime"] = self.df["Datetime"].dt.tz_localize("UTC") # El TXT ya contiene la hora UTC real, no hay que aplicar offset de zona horaria
         self.df["epochTime"] = self.df["Datetime"].astype(int) * 10**-9  # Convert nanoseconds to seconds
         # Drop the original "Date", "Time", and "Datetime" columns
         self.df.drop(["Date", "Time", "Datetime"], axis=1, inplace=True)
